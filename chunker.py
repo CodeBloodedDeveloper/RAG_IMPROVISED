@@ -52,4 +52,3 @@ def smart_chunk(text: str, max_tokens=300, overlap_tokens=50) -> list[str]:
         chunks.append(" ".join(current_chunk))
 
     return chunks
-

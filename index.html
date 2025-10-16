@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- This tag is essential for mobile responsiveness -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Suite AI Advisor</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --background-color: #0c0a15;
+            --text-color: #e2e8f0;
+            --text-muted-color: #94a3b8;
+            --card-bg: rgba(23, 22, 32, 0.5);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Vertically center the container on desktop */
+        }
+        
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 95vh; /* Use viewport height with a small margin */
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .chat-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            font-weight: 600;
+            background: rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+
+        .chat-log {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .avatar.user-avatar { background-color: #7c3aed; }
+        .avatar.CEO-avatar { background-color: #0ea5e9; }
+        .avatar.CFO-avatar { background-color: #16a34a; }
+        .avatar.CTO-avatar { background-color: #be185d; }
+        .avatar.CMO-avatar { background-color: #d97706; }
+        .avatar.System-avatar, .avatar.default-avatar { background-color: #64748b; }
+
+        .message-content {
+            background: rgba(0,0,0,0.2);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            word-break: break-word;
+        }
+        .message.user .message-content {
+            background: var(--primary-color);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .agent-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .message-text p:first-child { margin-top: 0; }
+        .message-text p:last-child { margin-bottom: 0; }
+        .message-text pre { background-color: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; }
+
+        .input-area {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 5px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-wrapper:focus-within { border-color: var(--primary-color); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+
+        #chat-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 10px;
+            color: var(--text-color);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            max-height: 120px; /* Limit auto-growth */
+            overflow-y: auto;
+        }
+        #chat-input:focus { outline: none; }
+        #chat-input::placeholder { color: var(--text-muted-color); }
+
+        #send-btn {
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+            margin-bottom: 2px; /* Align with textarea padding */
+        }
+        #send-btn:hover { background-color: #2563eb; }
+        #send-btn:disabled { background-color: #374151; cursor: not-allowed; }
+
+        .agent-popup {
+            position: absolute;
+            bottom: 100%;
+            left: 20px;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+            z-index: 10;
+        }
+        .agent-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            text-align: left;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .agent-btn:hover { background-color: var(--primary-color); }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 0; /* Add some padding for visibility */
+        }
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-muted-color);
+            border-radius: 50%;
+            animation: pulse 1.4s infinite ease-in-out;
+        }
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        
+        /* --- MOBILE FRIENDLINESS --- */
+        @media (max-width: 768px) {
+            body {
+                align-items: flex-start; /* Align container to top on mobile */
+            }
+
+            .chat-container {
+                height: 100vh;
+                max-height: none;
+                margin: 0;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+
+            .chat-header {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+
+            .chat-log {
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .message {
+                max-width: 90%;
+                gap: 10px;
+            }
+            
+            .avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.8rem;
+            }
+
+            .message-content {
+                padding: 10px 14px;
+                font-size: 0.95rem;
+            }
+
+            .input-area {
+                padding: 10px;
+            }
+
+            .agent-popup {
+                left: 10px;
+                width: calc(100% - 20px);
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">C-Suite AI Advisor</div>
+        <div class="chat-log" id="chat-log">
+            <!-- Messages will be injected here -->
+        </div>
+        <div class="input-area">
+             <div class="agent-popup" id="agent-popup">
+                <button class="agent-btn" data-agent="CEO">@CEO - Strategy</button>
+                <button class="agent-btn" data-agent="CFO">@CFO - Finance</button>
+                <button class="agent-btn" data-agent="CTO">@CTO - Technology</button>
+                <button class="agent-btn" data-agent="CMO">@CMO - Marketing</button>
+            </div>
+            <div class="input-wrapper">
+                <textarea id="chat-input" placeholder="Type a message, or use @..." rows="1"></textarea>
+                <button id="send-btn" title="Send Message">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-4.99-3.178 11.03-6.142Z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG & DOM ELEMENTS ---
+        const BACKEND_URL = 'https://harshilawasthijobs-zero21-rag-backend.hf.space/ask';
+        const chatLog = document.getElementById('chat-log');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const agentPopup = document.getElementById('agent-popup');
+        const markdownConverter = new showdown.Converter({ simplifiedAutoLink: true, openLinksInNewWindow: true });
+        
+        // --- STATE MANAGEMENT ---
+        let chatHistory = [];
+        let isLoading = false;
+
+        // --- CORE FUNCTIONS ---
+        function renderChatLog() {
+            chatLog.innerHTML = '';
+            chatHistory.forEach(msg => {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('message', msg.role === 'user' ? 'user' : 'ai');
+                
+                const agentName = msg.agentName || (msg.role === 'ai' ? 'AI' : 'You');
+                const avatarInitial = agentName.substring(0, 2).toUpperCase();
+                const avatarClass = `${agentName}-avatar`;
+
+                let contentHtml = '';
+                if (msg.isTyping) {
+                    contentHtml = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+                } else {
+                    contentHtml = markdownConverter.makeHtml(msg.content);
+                }
+
+                messageEl.innerHTML = `
+                    <div class="avatar ${avatarClass}">${avatarInitial}</div>
+                    <div class="message-content">
+                        ${msg.role === 'ai' ? `<div class="agent-name">${agentName}</div>` : ''}
+                        <div class="message-text">${contentHtml}</div>
+                    </div>
+                `;
+                chatLog.appendChild(messageEl);
+            });
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+        
+        async function handleSendMessage() {
+            const messageText = chatInput.value.trim();
+            if (!messageText || isLoading) return;
+
+            const mentionMatch = messageText.match(/@(\w+)/);
+            const activeRole = mentionMatch ? mentionMatch[1].toUpperCase() : 'Idea Validator';
+            
+            chatHistory.push({ role: 'user', content: messageText });
+            chatInput.value = '';
+            autoResizeTextarea(); // Reset textarea height
+            
+            isLoading = true;
+            sendBtn.disabled = true;
+            chatHistory.push({ role: 'ai', content: '', isTyping: true, agentName: activeRole });
+            renderChatLog();
+
+            // Prepare history for backend, excluding the current user message and typing indicator
+            const historyForBackend = chatHistory.slice(0, -2).map(msg => ({
+                role: msg.role === 'ai' ? 'model' : 'user', // Map roles for Gemini API
+                content: msg.content
+            }));
+            
+            const requestBody = {
+                messages: [
+                    ...historyForBackend,
+                    { role: 'user', content: messageText } // Add current message
+                ],
+                activeRole: activeRole
+            };
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                
+                const result = await response.json();
+                
+                chatHistory.pop();
+                chatHistory.push({ role: 'ai', content: result.answer || "I'm sorry, I couldn't generate a response.", agentName: result.role });
+
+            } catch (error) {
+                console.error("Failed to fetch AI response:", error);
+                chatHistory.pop();
+                chatHistory.push({ role: 'ai', content: 'Sorry, I encountered an error. Please check the network and try again.', agentName: 'System' });
+            } finally {
+                isLoading = false;
+                sendBtn.disabled = false;
+                renderChatLog();
+                chatInput.focus();
+            }
+        }
+
+        function autoResizeTextarea() {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = chatInput.scrollHeight + 'px';
+        }
+
+        // --- EVENT LISTENERS ---
+        sendBtn.addEventListener('click', handleSendMessage);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+        
+        chatInput.addEventListener('input', () => {
+            autoResizeTextarea();
+            const text = chatInput.value;
+            const atIndex = text.lastIndexOf('@');
+            if (atIndex !== -1 && !text.slice(atIndex + 1).includes(' ')) {
+                agentPopup.style.display = 'flex';
+            } else {
+                agentPopup.style.display = 'none';
+            }
+        });
+
+        agentPopup.addEventListener('click', (e) => {
+            if (e.target.classList.contains('agent-btn')) {
+                const agent = e.target.dataset.agent;
+                const atIndex = chatInput.value.lastIndexOf('@');
+                chatInput.value = chatInput.value.slice(0, atIndex) + `@${agent} `;
+                agentPopup.style.display = 'none';
+                chatInput.focus();
+            }
+        });
+        
+        // --- INITIALIZATION ---
+        chatHistory.push({ role: 'ai', agentName: 'System', content: 'Hello! How can I help you today? You can mention an agent like `@CMO` to ask a specific advisor.' });
+        renderChatLog();
+        autoResizeTextarea();
+
+    </script>
+</body>
+</html>

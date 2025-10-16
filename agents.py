@@ -35,12 +35,9 @@ async def _create_standalone_query(query: str, history: List[Dict]) -> str:
 Given the following conversation history and a follow-up question, rephrase the
 follow-up question to be a standalone question. If the follow-up question is
 already standalone, just return it as is.
-
 Conversation History:
 {history_prompt}
-
 Follow-up Question: {query}
-
 Standalone Question:"""
 
     try:
@@ -101,4 +98,3 @@ async def run_agent_conversational(
         "answer": response.text,
         "evidence_used": docs or "No evidence found, fallback to general knowledge.",
     }
-
