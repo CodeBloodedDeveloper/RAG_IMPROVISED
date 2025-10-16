@@ -15,7 +15,7 @@ poetry run python run_ingestion.py
 # Each worker will start quickly because they don't need to run ingestion.
 echo "--- ✅ Setup complete. Starting Gunicorn server... ---"
 
-# Use Gunicorn to run the FastAPI app with multiple workers for scalability.
+# Use Gunicorn to run the FastAPI app with multiple workers for scalability..
 # --max-requests 500: Automatically restarts a worker after it handles 500 requests.
 exec poetry run gunicorn -w 2 -k uvicorn.workers.UvicornWorker \
   --max-requests 500 \
