@@ -13,17 +13,18 @@
     <style>
         :root {
             --primary-color: #3b82f6;
-            --background-color: #f4f4f5; /* Light gray */
-            --card-bg: #ffffff;           /* White */
-            --text-color: #18181b;        /* Dark zinc */
-            --text-muted-color: #71717a;  /* Muted zinc */
-            --border-color: #e4e4e7;      /* Light gray border */
+            --background-color: #f9f9f9; /* Near white */
+            --card-bg: #ffffff;
+            --text-color: #111827;      /* Dark gray */
+            --text-muted-color: #6b7280;
+            --border-color: #e5e7eb;
         }
         
         * { box-sizing: border-box; }
 
         html, body {
             height: 100%;
+            width: 100%;
             overflow: hidden;
             background-color: var(--background-color);
         }
@@ -39,36 +40,69 @@
         
         .chat-container {
             width: 100%;
-            max-width: 800px;
-            height: 95vh;
-            max-height: 900px;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         .chat-header {
-            padding: 16px 24px;
+            padding: 12px 24px;
             border-bottom: 1px solid var(--border-color);
-            text-align: center;
-            font-weight: 600;
-            color: var(--text-color);
-            background: var(--card-bg);
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+        
+        .agent-selector {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .agent-btn {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .agent-btn:hover {
+            background-color: #f0f0f0;
+            border-color: #d1d5db;
+        }
+        
+        .agent-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .chat-log-wrapper {
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: var(--background-color);
         }
 
         .chat-log {
-            flex-grow: 1;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 24px;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            background-color: #fafafa;
+            gap: 24px;
         }
 
         .message {
@@ -82,19 +116,20 @@
             align-self: flex-end;
             flex-direction: row-reverse;
         }
+        
         .message.assistant {
             align-self: flex-start;
         }
 
         .avatar {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             flex-shrink: 0;
             color: white;
         }
@@ -105,19 +140,18 @@
         .avatar.CFO-avatar { background-color: #16a34a; }
         .avatar.CTO-avatar { background-color: #be185d; }
         .avatar.CMO-avatar { background-color: #d97706; }
-        .avatar.Idea-Validator-avatar { background-color: #d97706; } /* Added */
+        .avatar.Idea-Validator-avatar { background-color: #d97706; }
         .avatar.System-avatar { background-color: #64748b; }
-
 
         .message-content {
             padding: 12px 16px;
             border-radius: 8px;
             word-break: break-word;
+            border: 1px solid var(--border-color);
         }
         
         .message.assistant .message-content {
-            background: var(--background-color);
-            border: 1px solid var(--border-color);
+            background: var(--card-bg);
             color: var(--text-color);
         }
         
@@ -134,21 +168,25 @@
             color: var(--text-muted-color);
         }
 
+        .message-text {
+            line-height: 1.6;
+        }
         .message-text p:first-child { margin-top: 0; }
         .message-text p:last-child { margin-bottom: 0; }
         .message-text pre { 
-            background-color: #0f172a; /* Dark background for code */
+            background-color: #0f172a;
             color: #e2e8f0;
-            padding: 10px; 
+            padding: 12px; 
             border-radius: 6px; 
             white-space: pre-wrap; 
             word-wrap: break-word; 
             font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
         }
         .message-text code {
             font-family: 'Courier New', Courier, monospace;
             background-color: #e4e4e7;
-            padding: 2px 4px;
+            padding: 2px 5px;
             border-radius: 4px;
             font-size: 0.9em;
         }
@@ -157,24 +195,30 @@
             padding: 0;
             font-size: 1em;
         }
-
+        .message-text ul, .message-text ol {
+            padding-left: 20px;
+        }
 
         .input-area {
-            padding: 16px 24px;
+            padding: 16px 24px 24px 24px;
             border-top: 1px solid var(--border-color);
-            position: relative;
             flex-shrink: 0;
             background: var(--card-bg);
+        }
+        
+        .input-area-center {
+            max-width: 800px;
+            margin: 0 auto;
         }
         
         .input-wrapper {
             display: flex;
             gap: 10px;
             align-items: flex-end;
-            background-color: var(--background-color);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 5px;
+            border-radius: 12px;
+            padding: 8px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         .input-wrapper:focus-within { 
@@ -191,27 +235,27 @@
             font-size: 1rem;
             font-family: inherit;
             resize: none;
-            max-height: 120px;
+            max-height: 200px;
             overflow-y: auto;
         }
         #chat-input:focus { outline: none; }
         #chat-input::placeholder { color: var(--text-muted-color); }
         
-        /* Custom scrollbar for chat log and textarea */
-        .chat-log::-webkit-scrollbar,
+        .chat-log-wrapper::-webkit-scrollbar,
         #chat-input::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
-        .chat-log::-webkit-scrollbar-track,
+        .chat-log-wrapper::-webkit-scrollbar-track,
         #chat-input::-webkit-scrollbar-track {
-            background: transparent;
+            background: #f1f1f1;
+            border-radius: 4px;
         }
-        .chat-log::-webkit-scrollbar-thumb,
+        .chat-log-wrapper::-webkit-scrollbar-thumb,
         #chat-input::-webkit-scrollbar-thumb {
             background: #ccc;
-            border-radius: 3px;
+            border-radius: 4px;
         }
-        .chat-log::-webkit-scrollbar-thumb:hover,
+        .chat-log-wrapper::-webkit-scrollbar-thumb:hover,
         #chat-input::-webkit-scrollbar-thumb:hover {
             background: #aaa;
         }
@@ -221,7 +265,7 @@
             background-color: var(--primary-color);
             border: none;
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             width: 40px;
             height: 40px;
             cursor: pointer;
@@ -234,34 +278,6 @@
         }
         #send-btn:hover { background-color: #2563eb; }
         #send-btn:disabled { background-color: #a1a1aa; cursor: not-allowed; }
-
-        .agent-popup {
-            position: absolute;
-            bottom: 100%;
-            left: 20px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 8px;
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 5px;
-            z-index: 10;
-        }
-        .agent-btn {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            text-align: left;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            font-family: 'Inter', sans-serif;
-        }
-        .agent-btn:hover { background-color: var(--background-color); }
 
         .typing-indicator {
             display: flex;
@@ -284,28 +300,32 @@
         
         /* --- MOBILE FRIENDLINESS --- */
         @media (max-width: 768px) {
-            body {
-                align-items: flex-start;
-                background-color: var(--card-bg);
-            }
-
             .chat-container {
                 height: 100vh;
                 max-height: none;
-                margin: 0;
                 border-radius: 0;
-                border-left: none;
-                border-right: none;
-                border-top: none;
-                box-shadow: none;
+                border: none;
             }
-            .chat-header { padding: 12px 15px; }
+            .chat-header { 
+                padding: 12px 15px; 
+                flex-direction: column;
+                gap: 8px;
+            }
+            .agent-selector {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+            }
+            .agent-btn {
+                padding: 4px 8px;
+                font-size: 0.8rem;
+            }
+            .chat-log-wrapper { padding: 0; }
             .chat-log { padding: 15px; }
             .message { max-width: 90%; gap: 10px; }
             .avatar { width: 30px; height: 30px; font-size: 0.8rem; }
             .message-content { padding: 10px 14px; font-size: 0.95rem; }
             .input-area { padding: 10px; }
-            .agent-popup { left: 10px; width: calc(100% - 20px); }
         }
 
     </style>
@@ -313,58 +333,65 @@
 <body>
 
     <div class="chat-container">
-        <div class="chat-header">C-Suite AI Advisor</div>
-        <div class="chat-log" id="chat-log">
+        <div class="chat-header">
+            <div class="header-title">C-Suite AI Advisor</div>
+            <div class="agent-selector" id="agent-selector">
+                <button class="agent-btn" data-agent="Idea Validator">Idea Validator</button>
+                <button class="agent-btn" data-agent="CEO">CEO</button>
+                <button class="agent-btn" data-agent="CFO">CFO</button>
+                <button class="agent-btn" data-agent="CTO">CTO</button>
+                <button class="agent-btn" data-agent="CMO">CMO</button>
             </div>
+        </div>
+        
+        <div class="chat-log-wrapper" id="chat-log-wrapper">
+            <div class="chat-log" id="chat-log">
+                </div>
+        </div>
+        
         <div class="input-area">
-             <div class="agent-popup" id="agent-popup">
-                <button class="agent-btn" data-agent="Idea Validator">@Idea Validator - Start Here</button>
-                <button class="agent-btn" data-agent="CEO">@CEO - Strategy</button>
-                <button class="agent-btn" data-agent="CFO">@CFO - Finance</button>
-                <button class="agent-btn" data-agent="CTO">@CTO - Technology</button>
-                <button class="agent-btn" data-agent="CMO">@CMO - Marketing</button>
-            </div>
-            <div class="input-wrapper">
-                <textarea id="chat-input" placeholder="Type a message, or use @..." rows="1"></textarea>
-                <button id="send-btn" title="Send Message">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-4.99-3.178 11.03-6.142Z"/>
-                    </svg>
-                </button>
-            </div>
+             <div class="input-area-center">
+                <div class="input-wrapper">
+                    <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
+                    <button id="send-btn" title="Send Message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-4.99-3.178 11.03-6.142Z"/>
+                        </svg>
+                    </button>
+                </div>
+             </div>
         </div>
     </div>
 
     <script>
         // --- CONFIG & DOM ELEMENTS ---
         const BACKEND_URL = 'https://harshilawasthijobs-zero21-rag-backend.hf.space/ask';
+        const chatLogWrapper = document.getElementById('chat-log-wrapper');
         const chatLog = document.getElementById('chat-log');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
-        const agentPopup = document.getElementById('agent-popup');
+        const agentSelector = document.getElementById('agent-selector');
         const markdownConverter = new showdown.Converter({ simplifiedAutoLink: true, openLinksInNewWindow: true, tables: true, strikethrough: true });
         
         // --- STATE MANAGEMENT ---
         let chatHistory = [];
         let isLoading = false;
+        let activeRole = 'Idea Validator'; // Default role
 
         // --- CORE FUNCTIONS ---
         function renderChatLog() {
             chatLog.innerHTML = '';
             chatHistory.forEach(msg => {
                 const messageEl = document.createElement('div');
-                // Use 'assistant' for AI role
                 messageEl.classList.add('message', msg.role === 'user' ? 'user' : 'assistant');
                 
                 const agentName = msg.agentName || (msg.role === 'assistant' ? 'AI' : 'You');
-                // Use a consistent avatar class name
-                const avatarClass = `${agentName.replace(' ', '-')}-avatar`;
+                const avatarClass = `${agentName.replace(/ /g, '-')}-avatar`;
 
                 let contentHtml = '';
                 if (msg.isTyping) {
                     contentHtml = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
                 } else {
-                    // Render markdown only when not typing
                     contentHtml = markdownConverter.makeHtml(msg.content);
                 }
 
@@ -378,30 +405,28 @@
                 chatLog.appendChild(messageEl);
             });
             // Scroll to bottom
-            chatLog.scrollTop = chatLog.scrollHeight;
+            chatLogWrapper.scrollTop = chatLogWrapper.scrollHeight;
         }
         
         async function handleSendMessage() {
             const messageText = chatInput.value.trim();
             if (!messageText || isLoading) return;
 
-            const mentionMatch = messageText.match(/@([\w\s]+)/);
-            // Default to 'Idea Validator' if no mention
-            const activeRole = mentionMatch ? mentionMatch[1].trim() : 'Idea Validator';
+            // `activeRole` is now managed by the global variable
             
-            // Use 'assistant' for AI role
             chatHistory.push({ role: 'user', content: messageText, agentName: 'User' });
             chatInput.value = '';
             autoResizeTextarea(); // Reset textarea height
             
             isLoading = true;
             sendBtn.disabled = true;
+            // Use the currently active role for the agent name
             chatHistory.push({ role: 'assistant', content: '', isTyping: true, agentName: activeRole });
             renderChatLog();
 
             // Prepare history for backend
             const historyForBackend = chatHistory.slice(0, -2).map(msg => ({
-                role: msg.role, // Send roles as 'user' or 'assistant'
+                role: msg.role, // 'user' or 'assistant'
                 content: msg.content
             }));
             
@@ -410,7 +435,7 @@
                     ...historyForBackend,
                     { role: 'user', content: messageText } // Add current message
                 ],
-                activeRole: activeRole // Send the determined active role
+                activeRole: activeRole // Send the globally active role
             };
 
             try {
@@ -437,10 +462,7 @@
                     const chunk = decoder.decode(value, { stream: true });
                     aiResponseText += chunk;
                     
-                    // Update the content of the last AI message in history
                     lastMessage.content = aiResponseText;
-                    
-                    // Re-render the chat log with the updated content
                     renderChatLog();
                 }
 
@@ -461,8 +483,23 @@
             chatInput.style.height = (chatInput.scrollHeight) + 'px';
         }
 
+        // --- NEW AGENT SELECTOR LOGIC ---
+        function setActiveAgent(agentName) {
+            activeRole = agentName;
+            // Update button styles
+            document.querySelectorAll('.agent-btn').forEach(btn => {
+                if (btn.dataset.agent === agentName) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            console.log("Active agent changed to:", activeRole);
+        }
+
         // --- EVENT LISTENERS ---
         sendBtn.addEventListener('click', handleSendMessage);
+        
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -470,33 +507,27 @@
             }
         });
         
-        chatInput.addEventListener('input', () => {
-            autoResizeTextarea();
-            const text = chatInput.value;
-            const atIndex = text.lastIndexOf('@');
-            // Show popup if '@' is typed and there's no space after it yet
-            if (atIndex !== -1 && !text.slice(atIndex + 1).includes(' ')) {
-                agentPopup.style.display = 'flex';
-            } else {
-                agentPopup.style.display = 'none';
-            }
-        });
+        chatInput.addEventListener('input', autoResizeTextarea);
 
-        agentPopup.addEventListener('click', (e) => {
-            if (e.target.classList.contains('agent-btn')) {
-                const agent = e.target.dataset.agent;
-                const atIndex = chatInput.value.lastIndexOf('@');
-                chatInput.value = chatInput.value.slice(0, atIndex) + `@${agent} `;
-                agentPopup.style.display = 'none';
-                chatInput.focus();
-                autoResizeTextarea();
+        agentSelector.addEventListener('click', (e) => {
+            const target = e.target.closest('.agent-btn');
+            if (target && target.dataset.agent) {
+                setActiveAgent(target.dataset.agent);
             }
         });
         
         // --- INITIALIZATION ---
-        chatHistory.push({ role: 'assistant', agentName: 'System', content: 'Hello! How can I help you today? You can mention an agent like `@Idea Validator` to start.' });
-        renderChatLog();
-        autoResizeTextarea();
+        function initialize() {
+            // Set default active agent
+            setActiveAgent('Idea Validator');
+            
+            // Add initial welcome message
+            chatHistory.push({ role: 'assistant', agentName: 'System', content: 'Hello! Please select an advisor from the top to begin.' });
+            renderChatLog();
+            autoResizeTextarea();
+        }
+
+        initialize();
 
     </script>
 </body>
