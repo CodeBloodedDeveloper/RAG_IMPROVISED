@@ -15,7 +15,7 @@
             --primary-color: #3b82f6;
             --background-color: #f9f9f9; /* Near white */
             --card-bg: #ffffff;
-            --text-color: #111827;      /* Dark gray */
+            --text-color: #111827;     /* Dark gray */
             --text-muted-color: #6b7280;
             --border-color: #e5e7eb;
         }
@@ -488,7 +488,13 @@
             } catch (error) {
                 console.error("Failed to fetch AI response:", error);
                 chatHistory.pop(); // Remove the streaming/typing indicator
-                chatHistory.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please check the network and try again.', agentName: 'System' });
+                
+                // --- THIS BLOCK IS THE ONLY CHANGE ---
+                // Display the actual error message for better debugging
+                const errorMessage = `**Error:** ${error.message || 'An unknown error occurred.'}\n\nCheck the console (F12) for more details.`;
+                chatHistory.push({ role: 'assistant', content: errorMessage, agentName: 'System' });
+                // --- END OF CHANGE ---
+
             } finally {
                 isLoading = false;
                 sendBtn.disabled = false;
@@ -549,4 +555,10 @@
             chatHistory.push({ role: 'assistant', agentName: 'System', content: 'Hello! Please select an advisor from the top to begin.' });
             renderChatLog();
             autoResizeTextarea();
-  
+        }
+
+        initialize();
+
+    </script>
+</body>
+</html>
