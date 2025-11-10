@@ -389,9 +389,16 @@
                 const avatarClass = `${agentName.replace(/ /g, '-')}-avatar`;
 
                 let contentHtml = '';
+
+                // MODIFIED: Handle 'isStreaming' and 'isTyping' flags
                 if (msg.isTyping) {
                     contentHtml = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+                } else if (msg.isStreaming) {
+                    // While streaming, render raw text to avoid markdown errors
+                    // Convert special HTML chars to entities to prevent rendering as HTML
+                    contentHtml = msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 } else {
+                    // Once streaming is done, render full markdown
                     contentHtml = markdownConverter.makeHtml(msg.content);
                 }
 
@@ -412,31 +419,35 @@
             const messageText = chatInput.value.trim();
             if (!messageText || isLoading) return;
 
-            // `activeRole` is now managed by the global variable
-            
             chatHistory.push({ role: 'user', content: messageText, agentName: 'User' });
             chatInput.value = '';
-            autoResizeTextarea(); // Reset textarea height
+            autoResizeTextarea();
             
             isLoading = true;
             sendBtn.disabled = true;
-            // Use the currently active role for the agent name
-            chatHistory.push({ role: 'assistant', content: '', isTyping: true, agentName: activeRole });
-            renderChatLog();
+            
+            // MODIFIED: Use isStreaming instead of isTyping
+            chatHistory.push({ role: 'assistant', content: '', isStreaming: true, agentName: activeRole });
+            renderChatLog(); // Render the empty 'streaming' bubble
 
             // Prepare history for backend
             const historyForBackend = chatHistory.slice(0, -2).map(msg => ({
-                role: msg.role, // 'user' or 'assistant'
+                role: msg.role,
                 content: msg.content
             }));
             
             const requestBody = {
                 messages: [
                     ...historyForBackend,
-                    { role: 'user', content: messageText } // Add current message
+                    { role: 'user', content: messageText }
                 ],
-                activeRole: activeRole // Send the globally active role
+                activeRole: activeRole
             };
+
+            // Get the last message (the streaming one)
+            const lastMessage = chatHistory[chatHistory.length - 1];
+            // Find the actual DOM element for the message text
+            let lastMessageTextEl = document.querySelector('.message:last-child .message-text');
 
             try {
                 const response = await fetch(BACKEND_URL, {
@@ -449,30 +460,43 @@
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
-                let aiResponseText = '';
-
-                // Get the last message (the typing indicator) and update it
-                const lastMessage = chatHistory[chatHistory.length - 1];
-                lastMessage.isTyping = false;
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
                     
                     const chunk = decoder.decode(value, { stream: true });
-                    aiResponseText += chunk;
                     
-                    lastMessage.content = aiResponseText;
-                    renderChatLog();
+                    // MODIFIED: Directly append raw text to the state
+                    lastMessage.content += chunk;
+                    
+                    // MODIFIED: Update the DOM element's text content directly.
+                    // This is much faster and avoids re-rendering the whole chat log.
+                    if (lastMessageTextEl) {
+                        // Convert special HTML chars to entities to prevent rendering as HTML
+                        lastMessageTextEl.textContent = lastMessage.content;
+                    } else {
+                        // Fallback in case the element isn't found (should not happen)
+                        renderChatLog();
+                        lastMessageTextEl = document.querySelector('.message:last-child .message-text');
+                    }
+                    
+                    // Keep scrolled to bottom
+                    chatLogWrapper.scrollTop = chatLogWrapper.scrollHeight;
                 }
 
             } catch (error) {
                 console.error("Failed to fetch AI response:", error);
-                chatHistory.pop(); // Remove the typing indicator
+                chatHistory.pop(); // Remove the streaming/typing indicator
                 chatHistory.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please check the network and try again.', agentName: 'System' });
             } finally {
                 isLoading = false;
                 sendBtn.disabled = false;
+                
+                // MODIFIED: Set streaming to false *then* run the final markdown render
+                if (lastMessage) {
+                    lastMessage.isStreaming = false;
+                }
                 renderChatLog(); // Final render to apply markdown
                 chatInput.focus();
             }
@@ -525,10 +549,4 @@
             chatHistory.push({ role: 'assistant', agentName: 'System', content: 'Hello! Please select an advisor from the top to begin.' });
             renderChatLog();
             autoResizeTextarea();
-        }
-
-        initialize();
-
-    </script>
-</body>
-</html>
+  
