@@ -8,286 +8,265 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
     <style>
         :root {
-            --primary-color: #3b82f6;
-            --background-color: #f9f9f9; /* Near white */
-            --card-bg: #ffffff;
-            --text-color: #111827;     /* Dark gray */
-            --text-muted-color: #6b7280;
-            --border-color: #e5e7eb;
+            /* Gemini-inspired dark theme */
+            --primary-color: #4285F4; /* Google Blue */
+            --background-color: #121212; /* Deep dark background */
+            --text-color: #E8EAED;
+            --text-muted-color: #9AA0A6;
+            --card-bg: rgba(30, 30, 30, 0.9); /* Slightly lighter card bg */
+            --input-bg: rgba(255, 255, 255, 0.05); /* Very subtle input contrast */
+            --border-color: rgba(255, 255, 255, 0.1);
         }
         
-        * { box-sizing: border-box; }
-
+        /* Global Reset and Performance */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         html, body {
             height: 100%;
-            width: 100%;
             overflow: hidden;
-            background-color: var(--background-color);
         }
 
         body {
             font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
             color: var(--text-color);
-            margin: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: center; 
         }
         
         .chat-container {
             width: 100%;
-            height: 100vh;
+            max-width: 900px; /* Slightly wider for professional feel */
+            height: 95vh;
+            max-height: 900px;
             display: flex;
             flex-direction: column;
             background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px; /* Softer rounded corners */
             overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5); /* Stronger shadow */
         }
 
+        /* --- HEADER --- */
         .chat-header {
-            padding: 12px 24px;
+            padding: 15px 25px;
             border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .header-title {
             font-weight: 600;
             font-size: 1.1rem;
-            color: var(--text-color);
-        }
-        
-        .agent-selector {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .agent-btn {
-            background-color: var(--background-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-muted-color);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        
-        .agent-btn:hover {
-            background-color: #f0f0f0;
-            border-color: #d1d5db;
-        }
-        
-        .agent-btn.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+            text-align: left;
+            background: rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            color: var(--primary-color);
         }
 
-        .chat-log-wrapper {
-            flex-grow: 1;
-            overflow-y: auto;
-            background-color: var(--background-color);
-        }
-
+        /* --- CHAT LOG & SCROLLBAR --- */
         .chat-log {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 24px;
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 25px; /* Slightly more space between messages */
+            scroll-behavior: smooth;
         }
 
+        /* Custom Scrollbar for OS compatibility and visual appeal */
+        .chat-log::-webkit-scrollbar { width: 8px; }
+        .chat-log::-webkit-scrollbar-thumb { background-color: var(--text-muted-color); border-radius: 10px; }
+        .chat-log::-webkit-scrollbar-track { background-color: transparent; }
+
+        /* --- MESSAGE STYLES --- */
         .message {
             display: flex;
-            gap: 12px;
-            max-width: 85%;
-            animation: slideIn 0.3s ease-out forwards;
+            gap: 15px; /* Increased gap */
+            max-width: 90%;
+            opacity: 0; /* Starts hidden for JS animation */
+            transform: translateY(10px);
         }
-
-        .message.user {
-            align-self: flex-end;
-            flex-direction: row-reverse;
+        .message.rendered {
+             animation: slideIn 0.3s ease-out forwards;
         }
         
-        .message.assistant {
-            align-self: flex-start;
-        }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .message.ai { align-self: flex-start; }
 
+        /* Avatar Styling */
         .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
+            width: 40px; /* Slightly larger avatar */
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            font-size: 0.85rem;
+            font-weight: 700;
+            font-size: 1rem;
             flex-shrink: 0;
-            color: white;
         }
 
-        .avatar.user-avatar { background-color: #7c3aed; }
-        .avatar.assistant-avatar { background-color: #64748b; }
-        .avatar.CEO-avatar { background-color: #0ea5e9; }
-        .avatar.CFO-avatar { background-color: #16a34a; }
-        .avatar.CTO-avatar { background-color: #be185d; }
-        .avatar.CMO-avatar { background-color: #d97706; }
-        .avatar.Idea-Validator-avatar { background-color: #d97706; }
-        .avatar.System-avatar { background-color: #64748b; }
+        .avatar.user-avatar { background-color: #34A853; color: white; } /* Google Green */
+        .avatar.CEO-avatar { background-color: #FBBC04; color: #121212; } /* Google Yellow */
+        .avatar.CFO-avatar { background-color: #EA4335; color: white; } /* Google Red */
+        .avatar.CTO-avatar { background-color: #4285F4; color: white; } /* Google Blue */
+        .avatar.CMO-avatar { background-color: #A000A0; color: white; } /* Custom Accent */
+        .avatar.System-avatar, .avatar.default-avatar { background-color: #5F6368; color: white; }
 
+        /* Message Bubble */
         .message-content {
-            padding: 12px 16px;
-            border-radius: 8px;
-            word-break: break-word;
+            background: var(--input-bg);
+            padding: 15px 20px;
+            border-radius: 18px; /* Consistent roundedness */
             border: 1px solid var(--border-color);
+            word-break: break-word;
+            line-height: 1.6;
+            overflow-wrap: break-word; /* Better overflow handling */
+            max-width: 100%;
         }
-        
-        .message.assistant .message-content {
-            background: var(--card-bg);
-            color: var(--text-color);
-        }
-        
         .message.user .message-content {
             background: var(--primary-color);
-            border-color: transparent;
+            border-color: var(--primary-color);
             color: white;
+            border-bottom-right-radius: 4px; /* Tail effect */
+        }
+        .message.ai .message-content {
+            border-bottom-left-radius: 4px; /* Tail effect */
         }
         
+        /* Agent Header/Label */
         .agent-name {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--text-muted-color);
+            margin-bottom: 8px;
+            color: var(--primary-color);
         }
 
-        .message-text {
-            line-height: 1.6;
-        }
+        /* Markdown Styling */
         .message-text p:first-child { margin-top: 0; }
         .message-text p:last-child { margin-bottom: 0; }
         .message-text pre { 
-            background-color: #0f172a;
-            color: #e2e8f0;
-            padding: 12px; 
-            border-radius: 6px; 
+            background-color: rgba(255,255,255,0.1); 
+            padding: 10px; 
+            border-radius: 8px; 
             white-space: pre-wrap; 
-            word-wrap: break-word; 
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-        }
-        .message-text code {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #e4e4e7;
-            padding: 2px 5px;
-            border-radius: 4px;
+            word-wrap: break-word;
+            font-family: monospace;
             font-size: 0.9em;
+            overflow-x: auto;
         }
-        .message-text pre code {
-            background-color: transparent;
-            padding: 0;
-            font-size: 1em;
-        }
-        .message-text ul, .message-text ol {
-            padding-left: 20px;
-        }
+        .message-text code { background-color: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; }
+        .message-text pre code { background: none; padding: 0; }
+        .message-text strong { color: var(--text-color); }
+        .message-text h1, .message-text h2, .message-text h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-top: 15px; }
 
+        /* --- INPUT AREA --- */
         .input-area {
-            padding: 16px 24px 24px 24px;
+            padding: 20px;
             border-top: 1px solid var(--border-color);
+            position: relative;
             flex-shrink: 0;
             background: var(--card-bg);
-        }
-        
-        .input-area-center {
-            max-width: 800px;
-            margin: 0 auto;
         }
         
         .input-wrapper {
             display: flex;
             gap: 10px;
             align-items: flex-end;
-            background-color: var(--card-bg);
+            background-color: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 8px;
+            border-radius: 25px; /* Fully rounded input box */
+            padding: 5px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .input-wrapper:focus-within { 
-            border-color: var(--primary-color); 
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); 
-        }
+        .input-wrapper:focus-within { border-color: var(--primary-color); box-shadow: 0 0 10px rgba(66, 133, 244, 0.4); } /* Deeper, calmer shadow */
 
         #chat-input {
             width: 100%;
             border: none;
             background: transparent;
-            padding: 10px;
+            padding: 10px 15px; /* Increased horizontal padding */
             color: var(--text-color);
             font-size: 1rem;
             font-family: inherit;
             resize: none;
-            max-height: 200px;
+            max-height: 150px; /* Allow more vertical growth */
             overflow-y: auto;
+            line-height: 1.5;
         }
         #chat-input:focus { outline: none; }
         #chat-input::placeholder { color: var(--text-muted-color); }
         
-        .chat-log-wrapper::-webkit-scrollbar,
-        #chat-input::-webkit-scrollbar {
-            width: 8px;
-        }
-        .chat-log-wrapper::-webkit-scrollbar-track,
-        #chat-input::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        .chat-log-wrapper::-webkit-scrollbar-thumb,
-        #chat-input::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 4px;
-        }
-        .chat-log-wrapper::-webkit-scrollbar-thumb:hover,
-        #chat-input::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
-        }
-
-
+        /* Send Button */
         #send-btn {
             background-color: var(--primary-color);
             border: none;
             color: white;
-            border-radius: 8px;
+            border-radius: 50%; /* Circular button */
             width: 40px;
             height: 40px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
             flex-shrink: 0;
-            margin-bottom: 2px;
+            margin: 0 5px 0 0;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        #send-btn:hover { background-color: #2563eb; }
-        #send-btn:disabled { background-color: #a1a1aa; cursor: not-allowed; }
+        #send-btn:hover:not(:disabled) { background-color: #346DC7; transform: scale(1.05); }
+        #send-btn:disabled { 
+            background-color: var(--text-muted-color); 
+            cursor: wait; 
+            opacity: 0.6;
+            animation: none; /* Disable animation when disabled */
+        }
+        #send-btn svg { width: 18px; height: 18px; transform: translateX(1px); } /* Slight push to center arrow */
 
+        /* --- AGENT POPUP --- */
+        .agent-popup {
+            bottom: 100%;
+            left: 20px;
+            right: 20px; /* Full width minus padding */
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px;
+            display: none;
+            flex-direction: row; /* Horizontal layout for space efficiency */
+            flex-wrap: wrap;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+        .agent-btn {
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            color: var(--text-color);
+            padding: 8px 15px;
+            border-radius: 20px; /* Rounded pill buttons */
+            cursor: pointer;
+            flex-grow: 1;
+            text-align: center;
+            font-size: 0.9rem;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .agent-btn:hover { background-color: rgba(255,255,255,0.1); border-color: var(--primary-color); }
+        
+        /* --- TYPING INDICATOR --- */
         .typing-indicator {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 7px;
             padding: 10px 0;
         }
         .typing-indicator .dot {
-            width: 8px;
-            height: 8px;
+            width: 10px; 
+            height: 10px; 
             background-color: var(--text-muted-color);
             border-radius: 50%;
             animation: pulse 1.4s infinite ease-in-out;
@@ -295,270 +274,246 @@
         .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
 
+        /* --- KEYFRAMES --- */
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
         
-        /* --- MOBILE FRIENDLINESS --- */
-        @media (max-width: 768px) {
+        /* --- MOBILE FRIENDLINESS (Final Polish) --- */
+        @media (max-width: 950px) {
             .chat-container {
                 height: 100vh;
                 max-height: none;
+                margin: 0;
                 border-radius: 0;
-                border: none;
+                border-left: none;
+                border-right: none;
             }
-            .chat-header { 
-                padding: 12px 15px; 
-                flex-direction: column;
-                gap: 8px;
+            body { align-items: flex-start; }
+            .agent-popup { 
+                left: 10px; 
+                right: 10px;
+                width: calc(100% - 20px); 
+                flex-direction: column; /* Vertical stack on small screens */
             }
-            .agent-selector {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 6px;
-            }
-            .agent-btn {
-                padding: 4px 8px;
-                font-size: 0.8rem;
-            }
-            .chat-log-wrapper { padding: 0; }
-            .chat-log { padding: 15px; }
-            .message { max-width: 90%; gap: 10px; }
-            .avatar { width: 30px; height: 30px; font-size: 0.8rem; }
-            .message-content { padding: 10px 14px; font-size: 0.95rem; }
-            .input-area { padding: 10px; }
+            .agent-btn { flex-grow: 0; }
         }
-
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="chat-header">
-            <div class="header-title">C-Suite AI Advisor</div>
-            <div class="agent-selector" id="agent-selector">
-                <button class="agent-btn" data-agent="Idea Validator">Idea Validator</button>
-                <button class="agent-btn" data-agent="CEO">CEO</button>
-                <button class="agent-btn" data-agent="CFO">CFO</button>
-                <button class="agent-btn" data-agent="CTO">CTO</button>
-                <button class="agent-btn" data-agent="CMO">CMO</button>
+        <div class="chat-header">C-Suite AI Advisor</div>
+        <div class="chat-log" id="chat-log">
             </div>
-        </div>
-        
-        <div class="chat-log-wrapper" id="chat-log-wrapper">
-            <div class="chat-log" id="chat-log">
-                </div>
-        </div>
-        
         <div class="input-area">
-             <div class="input-area-center">
-                <div class="input-wrapper">
-                    <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
-                    <button id="send-btn" title="Send Message">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-4.99-3.178 11.03-6.142Z"/>
-                        </svg>
-                    </button>
-                </div>
+             <div class="agent-popup" id="agent-popup">
+                 <button class="agent-btn" data-agent="CEO">@CEO - Strategy</button>
+                 <button class="agent-btn" data-agent="CFO">@CFO - Finance</button>
+                 <button class="agent-btn" data-agent="CTO">@CTO - Technology</button>
+                 <button class="agent-btn" data-agent="CMO">@CMO - Marketing</button>
+             </div>
+             <div class="input-wrapper">
+                 <textarea id="chat-input" placeholder="Type a message, or mention an advisor like @CTO..." rows="1"></textarea>
+                 <button id="send-btn" title="Send Message" disabled>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-4.99-3.178 11.03-6.142Z"/></svg>
+                 </button>
              </div>
         </div>
     </div>
 
-    <script>
-        // --- CONFIG & DOM ELEMENTS ---
-        const BACKEND_URL = 'https://harshilawasthijobs-zero21-rag-backend.hf.space/ask';
-        const chatLogWrapper = document.getElementById('chat-log-wrapper');
-        const chatLog = document.getElementById('chat-log');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const agentSelector = document.getElementById('agent-selector');
-        const markdownConverter = new showdown.Converter({ simplifiedAutoLink: true, openLinksInNewWindow: true, tables: true, strikethrough: true });
+<script>
+    // --- CONFIG & DOM ELEMENTS ---
+    const BACKEND_URL = 'https://harshilawasthijobs-zero21-rag-backend.hf.space/ask';
+    const chatLog = document.getElementById('chat-log');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const agentPopup = document.getElementById('agent-popup');
+    const markdownConverter = new showdown.Converter({ simplifiedAutoLink: true, openLinksInNewWindow: true });
+    
+    // --- STATE MANAGEMENT ---
+    let chatHistory = [];
+    let isSending = false;
+
+    // --- UTILITIES ---
+    function autoResizeTextarea() {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = chatInput.scrollHeight + 'px';
+        sendBtn.disabled = isSending || chatInput.value.trim().length === 0;
+    }
+
+    function scrollToBottom() {
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    // --- CORE RENDERING & ANIMATION ---
+    function createMessageElement(msg) {
+        const messageEl = document.createElement('div');
+        messageEl.classList.add('message', msg.role === 'user' ? 'user' : 'ai');
         
-        // --- STATE MANAGEMENT ---
-        let chatHistory = [];
-        let isLoading = false;
-        let activeRole = 'Idea Validator'; // Default role
+        const role = msg.agentName || (msg.role === 'ai' ? 'AI' : 'You');
+        const avatarInitial = role.substring(0, 2).toUpperCase();
+        const avatarClass = msg.role === 'user' ? 'user-avatar' : `${role}-avatar`;
 
-        // --- CORE FUNCTIONS ---
-        function renderChatLog() {
-            chatLog.innerHTML = '';
-            chatHistory.forEach(msg => {
-                const messageEl = document.createElement('div');
-                messageEl.classList.add('message', msg.role === 'user' ? 'user' : 'assistant');
-                
-                const agentName = msg.agentName || (msg.role === 'assistant' ? 'AI' : 'You');
-                const avatarClass = `${agentName.replace(/ /g, '-')}-avatar`;
-
-                let contentHtml = '';
-
-                // MODIFIED: Handle 'isStreaming' and 'isTyping' flags
-                if (msg.isTyping) {
-                    contentHtml = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-                } else if (msg.isStreaming) {
-                    // While streaming, render raw text to avoid markdown errors
-                    // Convert special HTML chars to entities to prevent rendering as HTML
-                    contentHtml = msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                } else {
-                    // Once streaming is done, render full markdown
-                    contentHtml = markdownConverter.makeHtml(msg.content);
-                }
-
-                messageEl.innerHTML = `
-                    <div class="avatar ${avatarClass}">${agentName.substring(0, 2).toUpperCase()}</div>
-                    <div class="message-content">
-                        ${msg.role === 'assistant' ? `<div class="agent-name">${agentName}</div>` : ''}
-                        <div class="message-text">${contentHtml}</div>
-                    </div>
-                `;
-                chatLog.appendChild(messageEl);
-            });
-            // Scroll to bottom
-            chatLogWrapper.scrollTop = chatLogWrapper.scrollHeight;
+        let contentHtml = '';
+        if (msg.isTyping) {
+            contentHtml = `<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+        } else {
+            contentHtml = markdownConverter.makeHtml(msg.content);
         }
-        
-        async function handleSendMessage() {
-            const messageText = chatInput.value.trim();
-            if (!messageText || isLoading) return;
 
-            chatHistory.push({ role: 'user', content: messageText, agentName: 'User' });
-            chatInput.value = '';
-            autoResizeTextarea();
+        messageEl.innerHTML = `
+            <div class="avatar ${avatarClass}">${avatarInitial}</div>
+            <div class="message-content">
+                ${msg.role === 'ai' && role !== 'System' ? `<div class="agent-name">${role}</div>` : ''}
+                <div class="message-text">${contentHtml}</div>
+            </div>
+        `;
+        return messageEl;
+    }
+
+    function renderChatLog() {
+        chatLog.innerHTML = '';
+        chatHistory.forEach((msg, index) => {
+            const messageEl = createMessageElement(msg);
+            chatLog.appendChild(messageEl);
             
-            isLoading = true;
-            sendBtn.disabled = true;
-            
-            // MODIFIED: Use isStreaming instead of isTyping
-            chatHistory.push({ role: 'assistant', content: '', isStreaming: true, agentName: activeRole });
-            renderChatLog(); // Render the empty 'streaming' bubble
-
-            // Prepare history for backend
-            const historyForBackend = chatHistory.slice(0, -2).map(msg => ({
-                role: msg.role,
-                content: msg.content
-            }));
-            
-            const requestBody = {
-                messages: [
-                    ...historyForBackend,
-                    { role: 'user', content: messageText }
-                ],
-                activeRole: activeRole
-            };
-
-            // Get the last message (the streaming one)
-            const lastMessage = chatHistory[chatHistory.length - 1];
-            // Find the actual DOM element for the message text
-            let lastMessageTextEl = document.querySelector('.message:last-child .message-text');
-
-            try {
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                if (!response.body) throw new Error("No response body from server.");
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder('utf-8');
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value, { stream: true });
-                    
-                    // MODIFIED: Directly append raw text to the state
-                    lastMessage.content += chunk;
-                    
-                    // MODIFIED: Update the DOM element's text content directly.
-                    // This is much faster and avoids re-rendering the whole chat log.
-                    if (lastMessageTextEl) {
-                        // Convert special HTML chars to entities to prevent rendering as HTML
-                        lastMessageTextEl.textContent = lastMessage.content;
-                    } else {
-                        // Fallback in case the element isn't found (should not happen)
-                        renderChatLog();
-                        lastMessageTextEl = document.querySelector('.message:last-child .message-text');
-                    }
-                    
-                    // Keep scrolled to bottom
-                    chatLogWrapper.scrollTop = chatLogWrapper.scrollHeight;
-                }
-
-            } catch (error) {
-                console.error("Failed to fetch AI response:", error);
-                chatHistory.pop(); // Remove the streaming/typing indicator
-                
-                // --- THIS BLOCK IS THE ONLY CHANGE ---
-                // Display the actual error message for better debugging
-                const errorMessage = `**Error:** ${error.message || 'An unknown error occurred.'}\n\nCheck the console (F12) for more details.`;
-                chatHistory.push({ role: 'assistant', content: errorMessage, agentName: 'System' });
-                // --- END OF CHANGE ---
-
-            } finally {
-                isLoading = false;
-                sendBtn.disabled = false;
-                
-                // MODIFIED: Set streaming to false *then* run the final markdown render
-                if (lastMessage) {
-                    lastMessage.isStreaming = false;
-                }
-                renderChatLog(); // Final render to apply markdown
-                chatInput.focus();
-            }
-        }
-
-        function autoResizeTextarea() {
-            chatInput.style.height = 'auto';
-            chatInput.style.height = (chatInput.scrollHeight) + 'px';
-        }
-
-        // --- NEW AGENT SELECTOR LOGIC ---
-        function setActiveAgent(agentName) {
-            activeRole = agentName;
-            // Update button styles
-            document.querySelectorAll('.agent-btn').forEach(btn => {
-                if (btn.dataset.agent === agentName) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            console.log("Active agent changed to:", activeRole);
-        }
-
-        // --- EVENT LISTENERS ---
-        sendBtn.addEventListener('click', handleSendMessage);
-        
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
+            if (!msg.isTyping) {
+                 setTimeout(() => messageEl.classList.add('rendered'), index * 5);
+            } else {
+                 messageEl.classList.add('rendered');
             }
         });
-        
-        chatInput.addEventListener('input', autoResizeTextarea);
+        scrollToBottom();
+    }
 
-        agentSelector.addEventListener('click', (e) => {
-            const target = e.target.closest('.agent-btn');
-            if (target && target.dataset.agent) {
-                setActiveAgent(target.dataset.agent);
-            }
-        });
+    // --- MAIN LOGIC (REAL STREAMING) ---
+    async function handleSendMessage() {
+        const messageText = chatInput.value.trim();
+        if (!messageText || isSending) return;
+
+        // 1. Determine Agent Role
+        const mentionMatch = messageText.match(/@(\w+)/);
+        const activeRole = mentionMatch ? mentionMatch[1].toUpperCase() : 'System'; 
+
+        // 2. Add User Message
+        chatHistory.push({ role: 'user', content: messageText, agentName: 'You' });
+        chatInput.value = '';
+        autoResizeTextarea(); 
         
-        // --- INITIALIZATION ---
-        function initialize() {
-            // Set default active agent
-            setActiveAgent('Idea Validator');
+        // 3. Set Loading State & Add Bouncing Dots Indicator
+        isSending = true;
+        sendBtn.disabled = true;
+        chatHistory.push({ role: 'ai', content: '', isTyping: true, agentName: activeRole });
+        renderChatLog();
+
+        // 4. Prepare History for Backend
+        const historyForBackend = chatHistory.slice(0, -2).map(msg => ({
+            role: msg.role === 'ai' ? 'model' : 'user',
+            content: msg.content
+        }));
+        
+        const requestBody = {
+            messages: [
+                ...historyForBackend,
+                { role: 'user', content: messageText } 
+            ],
+            activeRole: activeRole
+        };
+        
+        const typingMessageIndex = chatHistory.length - 1;
+
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
             
-            // Add initial welcome message
-            chatHistory.push({ role: 'assistant', agentName: 'System', content: 'Hello! Please select an advisor from the top to begin.' });
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            
+            // Turn off the bouncy dots now that the connection is made
+            chatHistory[typingMessageIndex].isTyping = false;
+            renderChatLog(); // Re-render to clear the dots
+
+            // Grab a reference to the active message's content div in the DOM
+            const typingMessageEl = chatLog.lastChild;
+            const contentDiv = typingMessageEl.querySelector('.message-text');
+            
+            // REAL STREAMING: Read the chunked response directly from the browser's network stream
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let fullContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                fullContent += chunk;
+                
+                // Convert to Markdown and inject into the DOM instantly
+                contentDiv.innerHTML = markdownConverter.makeHtml(fullContent);
+                scrollToBottom();
+            }
+
+            // Save the final parsed stream to the history array
+            chatHistory[typingMessageIndex].content = fullContent;
+
+        } catch (error) {
+            console.error("Failed to fetch AI response:", error);
+            
+            chatHistory[typingMessageIndex].isTyping = false;
+            chatHistory[typingMessageIndex].content = 'Sorry, I encountered an error. Please check the network and API connectivity.';
+            
             renderChatLog();
-            autoResizeTextarea();
+        } finally {
+            isSending = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        } 
+    }
+
+    // --- EVENT LISTENERS ---
+    sendBtn.addEventListener('click', handleSendMessage);
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
         }
+    });
+    
+    chatInput.addEventListener('input', () => {
+        autoResizeTextarea();
+        const text = chatInput.value;
+        const atIndex = text.lastIndexOf('@');
+        
+        if (!isSending && atIndex !== -1 && !text.slice(atIndex + 1).includes(' ')) {
+            agentPopup.style.display = 'flex';
+        } else {
+            agentPopup.style.display = 'none';
+        }
+    });
 
-        initialize();
+    agentPopup.addEventListener('click', (e) => {
+        if (e.target.classList.contains('agent-btn')) {
+            const agent = e.target.dataset.agent;
+            const atIndex = chatInput.value.lastIndexOf('@');
+            chatInput.value = chatInput.value.slice(0, atIndex) + `@${agent} `;
+            agentPopup.style.display = 'none';
+            autoResizeTextarea();
+            chatInput.focus();
+        }
+    });
+    
+    // --- INITIALIZATION ---
+    chatHistory.push({ 
+        role: 'ai', 
+        agentName: 'System', 
+        content: 'Hello! I am your C-Suite AI Advisor. Ask a question, or mention an advisor like `@CEO` for strategic advice.' 
+    });
+    renderChatLog();
+    autoResizeTextarea();
 
-    </script>
+</script>
 </body>
 </html>
