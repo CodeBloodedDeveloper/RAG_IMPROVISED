@@ -328,7 +328,11 @@
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
     const agentPopup = document.getElementById('agent-popup');
-    const markdownConverter = new showdown.Converter({ simplifiedAutoLink: true, openLinksInNewWindow: true });
+    const markdownConverter = new showdown.Converter({ 
+    simplifiedAutoLink: true, 
+    openLinksInNewWindow: true, 
+    tables: true 
+});
     
     // --- STATE MANAGEMENT ---
     let chatHistory = [];
